@@ -16,7 +16,7 @@ function ShootingBullet({
   const src = isStartAnimation ? "/start-bullet.gif" : "/hold-bullet.png";
 
   return (
-    <div className="absolute left-[45vw] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+    <div className="absolute left-[50vw] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
       <Image src={src} alt="apple" width={width} height={height} priority />
     </div>
   );

@@ -7,41 +7,72 @@ import React, {
   useCallback,
 } from "react";
 import Modal from "@/components/Modal";
-import FinishLine from "@/components/FinishLine";
+import TargetZombie from "@/components/TargetZombie";
 import Shoot from "@/components/Shoot";
 import Distance from "@/components/Distance";
+import Citizen from "@/components/Citizen";
 
+// 게임 상수
 const METRIC = {
-  BG_WIDTH: 5000, // 가로로 5000px 진행
-  GUN_WIDTH: 100,
-  GUN_HEIGHT: 100,
+  BG_WIDTH: 7000,
+  GUN_WIDTH: 120,
+  GUN_HEIGHT: 120,
+} as const;
+
+const TARGET_WIDTH = 150;
+const TARGET_HEIGHT = 150;
+
+const GAME_CONFIG = {
+  START_VALUE: 0,
+  DECAY_PER_SEC: 1000, // 초당 증가량
+
+  AUTO_FAIL_METERS: 5000,
+  FINISH_LINE_MIN: 2000,
+  FINISH_LINE_MAX: 4500,
+  START_DELAY_MS: 800,
+  MODAL_DELAY_MS: 500,
 };
-const STATE_UPDATE_INTERVAL_MS = 33; // 약 30FPS로 화면 업데이트 (33ms = 1/30초)
-const START_VALUE = 4000;
-const DECAY_PER_SEC = 1000; // 초당 1000씩 감소
-const SUCCESS_METERS = 40;
-const AUTO_FAIL_METERS = -1;
+
+// 배경 이미지 스타일
+const BACKGROUND_STYLE = {
+  backgroundImage: "url('/background.png')",
+  backgroundSize: "auto 100%",
+  backgroundRepeat: "repeat-x",
+  backgroundPosition: "left center",
+} as const;
 
 type GameState = "ready" | "starting" | "playing" | "success" | "failed";
 
-export default function AppleHoldGame() {
-  const [gameState, setGameState] = useState<GameState>("ready");
-  const valueRef = useRef(START_VALUE);
-  const [displayValue, setDisplayValue] = useState(START_VALUE); // 화면 표시용
-  const [isRunning, setIsRunning] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const rafRef = useRef<number | null>(null); //RAF ID 저장
-  const lastTimeRef = useRef<number | null>(null); // 이전 프레임 시간 (delta 계산용)
-  const lastDisplayUpdateTimeRef = useRef<number>(0); // 마지막 화면 업데이트 시간 (throttle용)
+// 랜덤 위치 생성 함수
+const generateRandomTargetZombiePosition = (): number => {
+  return (
+    Math.floor(
+      Math.random() *
+        (GAME_CONFIG.FINISH_LINE_MAX - GAME_CONFIG.FINISH_LINE_MIN + 1)
+    ) + GAME_CONFIG.FINISH_LINE_MIN
+  );
+};
 
+export default function SniperZombieGame() {
+  // 게임 상태
+  const [gameState, setGameState] = useState<GameState>("ready");
+  const [bulletPosition, setBulletPosition] = useState(GAME_CONFIG.START_VALUE);
+  const [isRunning, setIsRunning] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [targetZombiePosition, setTargetZombiePosition] = useState(
+    GAME_CONFIG.FINISH_LINE_MIN
+  );
+  const [viewportHeight, setViewportHeight] = useState(0);
+
+  // Refs
+  const valueRef = useRef(GAME_CONFIG.START_VALUE);
+  const rafRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
   const loopRef = useRef<(currentTime: number) => void>(() => {});
 
-  // 뷰포트 크기 측정 (모바일 포함)
+  // 뷰포트 크기 측정
   useEffect(() => {
-    const updateViewport = () => {
-      setViewportHeight(window.innerHeight);
-    };
+    const updateViewport = () => setViewportHeight(window.innerHeight);
     updateViewport();
     window.addEventListener("resize", updateViewport);
     window.addEventListener("orientationchange", updateViewport);
@@ -51,7 +82,19 @@ export default function AppleHoldGame() {
     };
   }, []);
 
-  // 컴포넌트 언마운트 시 cancelAnimationFrame
+  // 클라이언트에서만 도착선 위치 랜덤 생성 (hydration mismatch 방지)
+  useEffect(() => {
+    if (
+      targetZombiePosition === GAME_CONFIG.FINISH_LINE_MIN &&
+      typeof window !== "undefined"
+    ) {
+      setTimeout(() => {
+        setTargetZombiePosition(generateRandomTargetZombiePosition());
+      }, 0);
+    }
+  }, [targetZombiePosition]);
+
+  // 컴포넌트 언마운트 시 cleanup
   useEffect(() => {
     return () => {
       if (rafRef.current != null) {
@@ -61,6 +104,7 @@ export default function AppleHoldGame() {
     };
   }, []);
 
+  // 게임 루프 제어
   const stopLoop = useCallback(() => {
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
@@ -72,112 +116,105 @@ export default function AppleHoldGame() {
     stopLoop();
     setIsRunning(false);
     setGameState("failed");
-    setTimeout(() => setShowModal(true), 500);
+    setTimeout(() => setShowModal(true), GAME_CONFIG.MODAL_DELAY_MS);
   }, [stopLoop]);
 
-  // 매 렌더링마다 최신 함수로 업데이트하여 스테일 클로저 문제 해결
-  // delta 시간 기반으로 변경: FPS에 의존하지 않고 실제 경과 시간 기반으로 동작
+  // 게임 루프 (delta 시간 기반)
   const loop = useCallback(
     (currentTime: number) => {
-      // 첫 프레임이면 이전 시간을 현재 시간으로 설정
       if (lastTimeRef.current === null) {
         lastTimeRef.current = currentTime;
       }
 
-      // delta 시간 계산 (밀리초를 초로 변환)
       const deltaTime = (currentTime - lastTimeRef.current) / 1000;
       lastTimeRef.current = currentTime;
-      // delta 시간 기반으로 감소량 계산
-      const decay = DECAY_PER_SEC * deltaTime;
-      const next = valueRef.current - decay;
+      const decay = GAME_CONFIG.DECAY_PER_SEC * deltaTime;
+      const next = valueRef.current + decay;
 
-      if (next <= AUTO_FAIL_METERS) {
-        valueRef.current = AUTO_FAIL_METERS;
-        setDisplayValue(AUTO_FAIL_METERS);
+      if (next >= GAME_CONFIG.AUTO_FAIL_METERS) {
+        valueRef.current = GAME_CONFIG.AUTO_FAIL_METERS;
+        setBulletPosition(GAME_CONFIG.AUTO_FAIL_METERS);
+        console.log(`next: ${next}`);
         failGame();
         return;
       }
 
       valueRef.current = next;
-
-      // 화면 표시는 throttle 적용 (약 30FPS로 업데이트)
-      const timeSinceLastUpdate =
-        currentTime - lastDisplayUpdateTimeRef.current;
-      if (timeSinceLastUpdate >= STATE_UPDATE_INTERVAL_MS) {
-        setDisplayValue(next);
-        lastDisplayUpdateTimeRef.current = currentTime;
-      }
-
-      // loopRef.current를 사용하여 항상 최신 함수를 호출
+      setBulletPosition(next);
       rafRef.current = requestAnimationFrame(loopRef.current);
     },
-    [failGame, setDisplayValue]
+    [failGame]
   );
 
   useEffect(() => {
     loopRef.current = loop;
   }, [loop]);
 
+  // 게임 상태 초기화
   const resetGameState = useCallback(() => {
     setIsRunning(false);
     setShowModal(false);
     stopLoop();
   }, [stopLoop]);
+
+  const initializeGame = useCallback(() => {
+    setTargetZombiePosition(generateRandomTargetZombiePosition());
+    valueRef.current = GAME_CONFIG.START_VALUE;
+    setBulletPosition(GAME_CONFIG.START_VALUE);
+  }, []);
+
   const handleGameStart = useCallback(() => {
     resetGameState();
-    // 먼저 "starting" 상태로 전환하고 1초 뒤에 "playing"으로 바뀜
+    initializeGame();
     setGameState("starting");
-    valueRef.current = START_VALUE;
-    setDisplayValue(START_VALUE);
-  }, [resetGameState, setGameState, setDisplayValue]);
+  }, [resetGameState, initializeGame]);
 
-  // 화면 탭 시 루프를 멈추고 결과 판정
-  const handleScreenTap = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (gameState !== "playing" || !isRunning) return;
+  // 화면 탭 시 게임 종료 및 결과 판정
+  const handleScreenTap = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (gameState !== "playing" || !isRunning) return;
 
-    setIsRunning(false);
-    stopLoop();
+      setIsRunning(false);
+      stopLoop();
 
-    const finalValue = valueRef.current;
-    // displayValue는 throttle로 인해 최신 값이 아닐 수 있으므로 동기화
-    setDisplayValue(finalValue);
-    const newState: GameState =
-      finalValue <= SUCCESS_METERS && finalValue >= 0 ? "success" : "failed";
-
-    setGameState(newState);
-    setTimeout(() => setShowModal(true), 500);
-  };
+      const newState: GameState =
+        bulletPosition <= targetZombiePosition &&
+        bulletPosition >= targetZombiePosition - TARGET_WIDTH / 2
+          ? "success"
+          : "failed";
+      setGameState(newState);
+      setTimeout(() => setShowModal(true), GAME_CONFIG.MODAL_DELAY_MS);
+    },
+    [gameState, isRunning, stopLoop, targetZombiePosition, bulletPosition]
+  );
 
   const handleRetry = useCallback(() => {
     resetGameState();
+    initializeGame();
     setGameState("ready");
-    valueRef.current = START_VALUE;
-    setDisplayValue(START_VALUE);
-  }, [resetGameState]);
+  }, [resetGameState, initializeGame]);
 
-  // gameState가 "starting"일 때 1초 뒤에 "playing"으로 전환하면서 루프 시작
+  // 게임 시작 시 루프 시작
   useEffect(() => {
     if (gameState !== "starting") return;
 
-    const timer = window.setTimeout(() => {
-      // "playing" 상태로 전환하고 루프 시작 (자동 진행)
+    const timer = setTimeout(() => {
       setGameState("playing");
       setIsRunning(true);
       lastTimeRef.current = null;
-      lastDisplayUpdateTimeRef.current = 0;
       if (rafRef.current == null) {
         rafRef.current = requestAnimationFrame(loopRef.current);
       }
-    }, 500);
+    }, GAME_CONFIG.START_DELAY_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [gameState]);
 
-  // displayValue를 기반으로 백그라운드 X 오프셋 계산 (왼쪽 → 오른쪽 진행)
+  // 백그라운드 X 오프셋 계산
   const backgroundTranslateX = useMemo(
-    () => -(START_VALUE - displayValue),
-    [displayValue]
+    () => -(GAME_CONFIG.START_VALUE + bulletPosition),
+    [bulletPosition]
   );
 
   return (
@@ -186,7 +223,7 @@ export default function AppleHoldGame() {
         className="relative w-full no-select"
         style={{
           width: `${METRIC.BG_WIDTH}px`,
-          height: viewportHeight ? `${viewportHeight}px` : "50vh",
+          height: viewportHeight ? `${viewportHeight}px` : "100vh",
           transform: `translateX(${backgroundTranslateX}px)`,
           willChange: "transform",
           overflow: "hidden",
@@ -196,31 +233,32 @@ export default function AppleHoldGame() {
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={handleScreenTap}
       >
+        {/* 배경 레이어 1 */}
         <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "url('/background.png')",
-            backgroundSize: "auto 100%",
-            backgroundRepeat: "repeat-x",
-            backgroundPosition: "left center",
-            pointerEvents: "none",
-          }}
+          className="absolute inset-0 pointer-events-none"
+          style={BACKGROUND_STYLE}
         />
 
+        {/* 배경 레이어 2 (오버레이) */}
         <div
           className="absolute inset-0 pointer-events-none opacity-40"
-          style={{
-            backgroundImage: "url('/background.png')",
-            backgroundSize: "auto 100%",
-            backgroundRepeat: "repeat-x",
-            backgroundPosition: "left center",
-            zIndex: 1,
-          }}
+          style={{ ...BACKGROUND_STYLE, zIndex: 1 }}
         />
 
-        {/* 도착선 (가로 진행 기준) */}
-        <FinishLine startValue={START_VALUE} />
-        {/* 사과 (배경 기준 위치 고정) */}
+        {/* 타겟좀비 위치 (가로 진행 기준) */}
+        <TargetZombie
+          locationX={targetZombiePosition}
+          height={TARGET_HEIGHT}
+          width={TARGET_WIDTH}
+        />
+        {/* 총알 위치 (배경 기준 위치 고정) */}
+        {/* 시민 위치 (가로 진행 기준) */}
+        <Citizen
+          locationX={GAME_CONFIG.AUTO_FAIL_METERS}
+          height={TARGET_HEIGHT}
+          width={TARGET_WIDTH}
+        />
+
         <Shoot
           width={METRIC.GUN_WIDTH}
           height={METRIC.GUN_HEIGHT}
@@ -229,7 +267,10 @@ export default function AppleHoldGame() {
         />
       </div>
 
-      <Distance value={displayValue} />
+      {/* 거리 표시 (게임 진행 중, 성공, 실패 시에만 표시) */}
+      {(gameState === "playing" ||
+        gameState === "success" ||
+        gameState === "failed") && <Distance value={bulletPosition} />}
 
       {/* 게임 시작 버튼 */}
       {gameState === "ready" && (
@@ -246,17 +287,12 @@ export default function AppleHoldGame() {
         </div>
       )}
       <Modal
-        title={useMemo(
-          () => (gameState === "success" ? "성공했습니다" : "실패했습니다!"),
-          [gameState]
-        )}
-        description={useMemo(
-          () =>
-            gameState === "success"
-              ? `저격성공: ${displayValue.toFixed(0)}m`
-              : "저격에 실패했습니다.",
-          [gameState, displayValue]
-        )}
+        title={gameState === "success" ? "성공했습니다" : "실패했습니다!"}
+        description={
+          gameState === "success"
+            ? `저격성공: ${bulletPosition.toFixed(0)}m`
+            : "저격에 실패했습니다."
+        }
         onClick={handleRetry}
         show={showModal}
         buttonText="재시도"

@@ -1,5 +1,5 @@
 import { memo } from "react";
-
+import Image from "next/image";
 interface DistanceProps {
   value: number;
 }
@@ -10,9 +10,19 @@ function Distance({ value }: DistanceProps) {
       className="fixed left-1/2 -translate-x-1/2 z-10 pointer-events-none"
       style={{ top: "calc(50% - 50px)" }}
     >
-      <h1 className="text-black text-xl font-bold drop-shadow-lg whitespace-nowrap">
-        {value.toFixed(0)}m
-      </h1>
+      <div className="flex-column items-center justify-center gap-2">
+        <h1 className="text-black text-xl font-bold drop-shadow-lg whitespace-nowrap text-center pb-2">
+          {value.toFixed(0)}m
+        </h1>
+        <Image
+          src={"/bullet.png"}
+          alt="bullet"
+          width={60}
+          height={100}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          priority
+        />
+      </div>
     </div>
   );
 }
