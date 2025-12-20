@@ -4,28 +4,36 @@ import Image from "next/image";
 interface TargetZombieProps {
   /** 시작 위치(픽셀 단위 거리) */
   locationX: number;
+  gameState: string;
   height: number;
   width: number;
 }
 
-function TargetZombie({ locationX, height, width }: TargetZombieProps) {
+function TargetZombie({
+  locationX,
+  gameState,
+  height,
+  width,
+}: TargetZombieProps) {
+  const zombieState =
+    gameState === "success" ? "/zombie-explosion.png" : "/target-zombie.png";
+  const isSuccess = gameState === "success";
   return (
     <div
-      className="absolute top-[52vh] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
-      // className="absolute top-0 h-full w-[1px] z-20"
+      className="absolute top-[52vh] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[150px] h-[150px]"
       style={{
         // 화면 가로 중앙(50vw)을 기준으로 locationX만큼 오른쪽에 세로선 배치
         left: `calc(50vw + ${locationX}px)`,
-        width: "150px",
-        height: "150px",
       }}
     >
       <Image
-        src={"/target-zombie.png"}
-        alt="target-zombie"
+        src={zombieState}
+        alt="zombie-state"
         width={width}
         height={height}
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        className={`w-full h-full object-contain ${
+          isSuccess ? "rotate-[18deg]" : ""
+        }`}
         priority
       />
 

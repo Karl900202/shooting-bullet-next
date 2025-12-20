@@ -29,10 +29,7 @@ function Modal({
         <div className="flex justify-center">
           <button
             onClick={onClick}
-            className="w-1/2 py-4 text-white rounded-full font-normal text-lg transition-colors"
-            style={{
-              backgroundColor: "#4F00FF",
-            }}
+            className="w-1/2 py-4 text-white rounded-full font-normal text-lg transition-colors bg-[#4F00FF]"
           >
             {buttonText}
           </button>

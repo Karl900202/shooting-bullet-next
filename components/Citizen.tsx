@@ -4,37 +4,31 @@ import Image from "next/image";
 interface CitizenProps {
   /** 시작 위치(픽셀 단위 거리) */
   locationX: number;
+  gameState: string;
   height: number;
   width: number;
 }
 
-function Citizen({ locationX, height, width }: CitizenProps) {
+function Citizen({ locationX, gameState, height, width }: CitizenProps) {
+  const citizenState =
+    gameState === "failed" ? "/citizen-explosion.png" : "/citizen.png";
+
   return (
     <div
-      className="absolute top-[52vh] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
+      className="absolute top-[52vh] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[150px] h-[150px]"
       style={{
         // 화면 가로 중앙(50vw)을 기준으로 locationX만큼 오른쪽에 세로선 배치
-        left: `calc(50vw + ${locationX}px)`,
-        width: "150px",
-        height: "150px",
+        left: `calc(50vw + ${locationX}px + ${width / 4}px)`,
       }}
     >
       <Image
-        src={"/citizen.png"}
-        alt="citizen"
+        src={citizenState}
+        alt="citizenState"
         width={height}
         height={width}
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        className="w-full h-full object-contain"
         priority
       />
-      {/* <Image
-        className="absolute top-[36px] left-[42px]"
-        src={"/explosion.png"}
-        alt="explosion"
-        width={42}
-        height={42}
-        priority
-      /> */}
     </div>
   );
 }

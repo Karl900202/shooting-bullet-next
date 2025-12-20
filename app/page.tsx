@@ -15,8 +15,8 @@ import Citizen from "@/components/Citizen";
 // 게임 상수
 const METRIC = {
   BG_WIDTH: 7000,
-  GUN_WIDTH: 120,
-  GUN_HEIGHT: 120,
+  GUN_WIDTH: 130,
+  GUN_HEIGHT: 130,
 } as const;
 
 const TARGET_WIDTH = 150;
@@ -220,15 +220,11 @@ export default function SniperZombieGame() {
   return (
     <>
       <div
-        className="relative w-full no-select"
+        className=" w-full no-select overflow-hidden touch-none select-none will-change-transform"
         style={{
           width: `${METRIC.BG_WIDTH}px`,
           height: viewportHeight ? `${viewportHeight}px` : "100vh",
           transform: `translateX(${backgroundTranslateX}px)`,
-          willChange: "transform",
-          overflow: "hidden",
-          touchAction: "none",
-          userSelect: "none",
         }}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={handleScreenTap}
@@ -241,23 +237,27 @@ export default function SniperZombieGame() {
 
         {/* 배경 레이어 2 (오버레이) */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-40"
-          style={{ ...BACKGROUND_STYLE, zIndex: 1 }}
+          className="absolute inset-0 pointer-events-none opacity-40 z-[1]"
+          style={BACKGROUND_STYLE}
         />
 
         {/* 타겟좀비 위치 (가로 진행 기준) */}
         <TargetZombie
           locationX={targetZombiePosition}
+          gameState={gameState}
           height={TARGET_HEIGHT}
           width={TARGET_WIDTH}
         />
         {/* 총알 위치 (배경 기준 위치 고정) */}
-        {/* 시민 위치 (가로 진행 기준) */}
-        <Citizen
-          locationX={GAME_CONFIG.AUTO_FAIL_METERS}
-          height={TARGET_HEIGHT}
-          width={TARGET_WIDTH}
-        />
+        {/* 시민 위치 (가로 진행 기준) - 실패 시에만 표시 */}
+        {gameState === "failed" && (
+          <Citizen
+            locationX={bulletPosition}
+            gameState={gameState}
+            height={TARGET_HEIGHT}
+            width={TARGET_WIDTH}
+          />
+        )}
 
         <Shoot
           width={METRIC.GUN_WIDTH}
@@ -277,10 +277,7 @@ export default function SniperZombieGame() {
         <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 flex items-center justify-center z-30">
           <button
             onClick={handleGameStart}
-            className="px-10 py-3 text-white rounded-full font-normal text-lg border-[3px] border-white shadow-md transition-colors"
-            style={{
-              backgroundColor: "#4F00FF",
-            }}
+            className="px-10 py-3 text-white rounded-full font-normal text-lg border-[3px] border-white shadow-md transition-colors bg-[#4F00FF]"
           >
             게임 시작
           </button>

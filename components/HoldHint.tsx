@@ -12,11 +12,9 @@ function HoldHint({ show }: HoldHintProps) {
 
   return (
     <div
-      className="fixed z-10 -translate-x-1/2 -translate-y-1/2"
+      className="fixed z-10 -translate-x-1/2 -translate-y-1/2 top-[75vh] pointer-events-none"
       style={{
         left: "calc(50% + min(120px, (100vw - 480px) / 2 + 120px))",
-        top: "75vh",
-        pointerEvents: "none",
       }}
     >
       <Image
@@ -24,12 +22,7 @@ function HoldHint({ show }: HoldHintProps) {
         alt="꾹 눌러주세요"
         width={100}
         height={100}
-        style={{
-          width: "100px",
-          height: "100px",
-          minWidth: "75px",
-          minHeight: "75px",
-        }}
+        className="w-[100px] h-[100px] min-w-[75px] min-h-[75px]"
         unoptimized
       />
     </div>
