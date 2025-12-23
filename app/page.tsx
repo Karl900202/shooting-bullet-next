@@ -81,8 +81,8 @@ export default function SniperZombieGame() {
     };
   }, []);
 
-  // 클라이언트에서만 도착선 위치 랜덤 생성 (hydration mismatch 방지)
-  useEffect(() => {
+  // 타겟 좀비 위치 초기화 (hydration mismatch 방지)
+  const initTargetZombiePosition = useCallback(() => {
     if (
       targetZombiePosition === GAME_CONFIG.FINISH_LINE_MIN &&
       typeof window !== "undefined"
@@ -92,6 +92,11 @@ export default function SniperZombieGame() {
       }, 0);
     }
   }, [targetZombiePosition]);
+
+  // 클라이언트에서만 도착선 위치 랜덤 생성 (hydration mismatch 방지)
+  useEffect(() => {
+    initTargetZombiePosition();
+  }, [initTargetZombiePosition]);
 
   // 컴포넌트 언마운트 시 cleanup
   useEffect(() => {
@@ -111,11 +116,15 @@ export default function SniperZombieGame() {
     }
   }, []);
 
-  const failGame = useCallback(() => {
-    stopLoop();
-    setGameState("failed");
-    setTimeout(() => setShowModal(true), GAME_CONFIG.MODAL_DELAY_MS);
-  }, [stopLoop]);
+  // 게임 종료 (성공/실패 공통 로직)
+  const endGame = useCallback(
+    (result: "success" | "failed") => {
+      stopLoop();
+      setGameState(result);
+      setTimeout(() => setShowModal(true), GAME_CONFIG.MODAL_DELAY_MS);
+    },
+    [stopLoop]
+  );
 
   // 시간 계산
   const calculateDeltaTime = useCallback((currentTime: number): number => {
@@ -143,12 +152,12 @@ export default function SniperZombieGame() {
       if (position >= GAME_CONFIG.AUTO_FAIL_METERS) {
         bulletRef.current = GAME_CONFIG.AUTO_FAIL_METERS;
         setBulletPosition(GAME_CONFIG.AUTO_FAIL_METERS);
-        failGame();
+        endGame("failed");
         return true;
       }
       return false;
     },
-    [failGame]
+    [endGame]
   );
 
   // RAF 재귀 호출
@@ -204,17 +213,14 @@ export default function SniperZombieGame() {
       e.preventDefault();
       if (gameState !== "playing") return;
 
-      stopLoop();
-
-      const newState: GameState =
+      const result: "success" | "failed" =
         bulletPosition <= targetZombiePosition &&
         bulletPosition >= targetZombiePosition - TARGET_WIDTH / 2
           ? "success"
           : "failed";
-      setGameState(newState);
-      setTimeout(() => setShowModal(true), GAME_CONFIG.MODAL_DELAY_MS);
+      endGame(result);
     },
-    [gameState, stopLoop, targetZombiePosition, bulletPosition]
+    [gameState, endGame, targetZombiePosition, bulletPosition]
   );
 
   const handleRetry = useCallback(() => {
