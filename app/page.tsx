@@ -56,11 +56,11 @@ export default function SniperZombieGame() {
     GAME_CONFIG.FINISH_LINE_MIN
   );
   const [viewportHeight, setViewportHeight] = useState(0);
-  const [backgroundTranslateX, setBackgroundTranslateX] = useState(0);
   const [accuracyText, setAccuracyText] = useState<string | null>(null);
 
   // Refs
   const bulletRef = useRef(GAME_CONFIG.START_VALUE);
+  const backgroundRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number | null>(null); // 마지막 state 업데이트 시간
@@ -166,6 +166,9 @@ export default function SniperZombieGame() {
       if (position >= GAME_CONFIG.AUTO_FAIL_METERS) {
         bulletRef.current = GAME_CONFIG.AUTO_FAIL_METERS;
         setBulletPosition(GAME_CONFIG.AUTO_FAIL_METERS);
+        if (backgroundRef.current) {
+          backgroundRef.current.style.transform = `translateX(${-GAME_CONFIG.AUTO_FAIL_METERS}px)`;
+        }
         endGame("failed");
         return true;
       }
@@ -190,8 +193,10 @@ export default function SniperZombieGame() {
 
       const newPosition = updateBulletPosition(deltaTime, currentTime);
 
-      // 매 프레임마다 배경 위치 업데이트 (정확한 위치 반영)
-      setBackgroundTranslateX(-bulletRef.current);
+      // 매 프레임마다 배경 위치 업데이트 (DOM 직접 조작으로 리페인팅만 발생)
+      if (backgroundRef.current) {
+        backgroundRef.current.style.transform = `translateX(${-bulletRef.current}px)`;
+      }
 
       if (checkGameOver(newPosition)) {
         return;
@@ -213,7 +218,9 @@ export default function SniperZombieGame() {
     setTargetZombiePosition(generateRandomTargetZombiePosition());
     bulletRef.current = GAME_CONFIG.START_VALUE;
     setBulletPosition(GAME_CONFIG.START_VALUE);
-    setBackgroundTranslateX(-GAME_CONFIG.START_VALUE);
+    if (backgroundRef.current) {
+      backgroundRef.current.style.transform = `translateX(${-GAME_CONFIG.START_VALUE}px)`;
+    }
     setAccuracyText(null);
     lastUpdateTimeRef.current = null;
   }, [stopLoop]);
@@ -281,11 +288,12 @@ export default function SniperZombieGame() {
   return (
     <>
       <div
+        ref={backgroundRef}
         className=" w-full no-select overflow-hidden touch-none select-none will-change-transform"
         style={{
           width: `${METRIC.BG_WIDTH}px`,
           height: viewportHeight ? `${viewportHeight}px` : "100vh",
-          transform: `translateX(${backgroundTranslateX}px)`,
+          transform: `translateX(${-GAME_CONFIG.START_VALUE}px)`,
         }}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={handleScreenTap}
