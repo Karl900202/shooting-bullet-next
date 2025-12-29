@@ -88,16 +88,6 @@ export default function SniperZombieGame() {
     initTargetZombiePosition();
   }, [initTargetZombiePosition]);
 
-  // 컴포넌트 언마운트 시 cleanup
-  useEffect(() => {
-    return () => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, []);
-
   // 게임 루프 제어
   const stopLoop = useCallback(() => {
     if (rafRef.current != null) {
