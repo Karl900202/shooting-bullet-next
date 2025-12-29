@@ -63,7 +63,6 @@ export default function SniperZombieGame() {
   const lastTimeRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number | null>(null); // 마지막 state 업데이트 시간
   const loopRef = useRef<(currentTime: number) => void>(() => {});
-  const isTargetPositionInitializedRef = useRef(false); // 타겟 위치 초기화 여부 추적
 
   // 뷰포트 크기 측정
   useEffect(() => {
@@ -80,12 +79,10 @@ export default function SniperZombieGame() {
   // 클라이언트에서만 도착선 위치 랜덤 생성 (hydration mismatch 방지)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (isTargetPositionInitializedRef.current) return;
 
     // setTimeout으로 hydration 이후에 실행되도록 보장
     setTimeout(() => {
       setTargetZombiePosition(generateRandomTargetZombiePosition());
-      isTargetPositionInitializedRef.current = true;
     }, 0);
   }, []); // 마운트 시 한 번만 실행
 
