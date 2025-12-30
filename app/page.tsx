@@ -22,6 +22,13 @@ const ACCURACY_THRESHOLDS = {
 const TARGET_WIDTH = 150;
 const TARGET_HEIGHT = 150;
 
+// UI 위치 상수
+export const UI_CONSTANTS = {
+  THROTTLE_MS: 33, // 30fps (1000ms / 30 ≈ 33ms)
+  TOP_POSITION_VH: 52, // "top-[52vh]"
+  CENTER_VW: 50, // "50vw"
+} as const;
+
 const GAME_CONFIG = {
   START_VALUE: 0,
   DECAY_PER_SEC: 1000, // 초당 증가량
@@ -137,7 +144,7 @@ export default function SniperZombieGame() {
       // 33ms마다 state 업데이트 렌더링 throttle 30fps
       if (
         lastUpdateTimeRef.current === null ||
-        currentTime - lastUpdateTimeRef.current >= 33
+        currentTime - lastUpdateTimeRef.current >= UI_CONSTANTS.THROTTLE_MS
       ) {
         setBulletPosition(bulletRef.current);
         lastUpdateTimeRef.current = currentTime;

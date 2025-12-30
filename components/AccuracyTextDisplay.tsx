@@ -1,5 +1,6 @@
 "use client";
 import { useSpring, animated, config } from "@react-spring/web";
+import { UI_CONSTANTS } from "@/app/page";
 
 // 정확도 텍스트 개별 글자 컴포넌트 (react-spring 사용)
 function AccuracyChar({
@@ -62,7 +63,7 @@ export default function AccuracyTextDisplay({
     <div
       className="absolute pointer-events-none z-[100] font-bold top-[30%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap inline-flex items-end"
       style={{
-        left: `calc(50vw + ${bulletPosition}px)`,
+        left: `calc(${UI_CONSTANTS.CENTER_VW}vw + ${bulletPosition}px)`,
       }}
     >
       {text.split("").map((char, index) => (

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import Image from "next/image";
-import { GameState } from "@/app/page";
+import { GameState, UI_CONSTANTS } from "@/app/page";
 
 interface TargetZombieProps {
   /** 시작 위치(픽셀 단위 거리) */
@@ -21,10 +21,11 @@ function TargetZombie({
 
   return (
     <div
-      className="absolute top-[52vh] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[150px] h-[150px]"
+      className="absolute -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none w-[150px] h-[150px]"
       style={{
-        // 화면 가로 중앙(50vw)을 기준으로 locationX만큼 오른쪽에 세로선 배치
-        left: `calc(50vw + ${locationX}px)`,
+        top: `${UI_CONSTANTS.TOP_POSITION_VH}vh`,
+        // 화면 가로 중앙을 기준으로 locationX만큼 오른쪽에 세로선 배치
+        left: `calc(${UI_CONSTANTS.CENTER_VW}vw + ${locationX}px)`,
       }}
     >
       <Image

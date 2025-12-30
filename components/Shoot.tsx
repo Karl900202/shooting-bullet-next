@@ -1,5 +1,6 @@
 import { memo } from "react";
 import Image from "next/image";
+import { UI_CONSTANTS } from "@/app/page";
 
 interface ShootingBulletProps {
   width: number;
@@ -16,7 +17,12 @@ function ShootingBullet({
   const src = isStartAnimation ? "/start-bullet.gif" : "/hold-bullet.png";
 
   return (
-    <div className="absolute left-[50vw] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+    <div
+      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"
+      style={{
+        left: `${UI_CONSTANTS.CENTER_VW}vw`,
+      }}
+    >
       <Image src={src} alt="apple" width={width} height={height} priority />
     </div>
   );
